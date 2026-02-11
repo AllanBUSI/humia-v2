@@ -1,0 +1,248 @@
+generator client {
+  provider   = "prisma-client-js"
+  engineType = "client"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ─── Better Auth tables ──────────────────────────────
+
+model user {
+  id                  String    @id
+  email               String    @unique
+  emailVerified       Boolean   @default(false) @map("email_verified")
+  name                String?
+  image               String?
+  firstName           String    @default("") @map("first_name")
+  lastName            String    @default("") @map("last_name")
+  jobTitle            String?   @map("job_title")
+  phone               String?
+  onboardingCompleted Boolean   @default(false) @map("onboarding_completed")
+  role                String    @default("admin") // admin, responsable, coordinateur, formateur
+  parentId            String?   @map("parent_id") // links sub-users to their admin
+  createdAt           DateTime  @default(now()) @map("created_at")
+  updatedAt           DateTime  @default(now()) @updatedAt @map("updated_at")
+
+  sessions session[]
+  accounts account[]
+  schools          School[]
+  teamMembers      TeamMember[]
+  students         Student[]
+  planningSessions PlanningSession[]
+  classes          Classroom[]
+  trainers         Trainer[]
+  grades           Grade[]
+  correspondences  Correspondence[]
+  trainerProfile   Trainer?   @relation("TrainerUser")
+
+  @@map("user")
+}
+
+model session {
+  id        String   @id
+  expiresAt DateTime @map("expires_at")
+  token     String   @unique
+  ipAddress String?  @map("ip_address")
+  userAgent String?  @map("user_agent")
+  userId    String   @map("user_id")
+  user      user     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @default(now()) @updatedAt @map("updated_at")
+
+  @@map("session")
+}
+
+model account {
+  id                    String    @id
+  accountId             String    @map("account_id")
+  providerId            String    @map("provider_id")
+  userId                String    @map("user_id")
+  user                  user      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  accessToken           String?   @map("access_token")
+  refreshToken          String?   @map("refresh_token")
+  idToken               String?   @map("id_token")
+  accessTokenExpiresAt  DateTime? @map("access_token_expires_at")
+  refreshTokenExpiresAt DateTime? @map("refresh_token_expires_at")
+  scope                 String?
+  password              String?
+  createdAt             DateTime  @default(now()) @map("created_at")
+  updatedAt             DateTime  @default(now()) @updatedAt @map("updated_at")
+
+  @@map("account")
+}
+
+model verification {
+  id         String    @id
+  identifier String
+  value      String
+  expiresAt  DateTime  @map("expires_at")
+  createdAt  DateTime? @default(now()) @map("created_at")
+  updatedAt  DateTime? @default(now()) @updatedAt @map("updated_at")
+
+  @@map("verification")
+}
+
+// ─── App tables ──────────────────────────────────────
+
+model School {
+  id         String   @id @default(uuid()) @db.Uuid
+  ownerId    String   @map("owner_id")
+  owner      user     @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  name       String
+  address    String?
+  city       String?
+  postalCode String?  @map("postal_code")
+  phone      String?
+  email      String?
+  siret      String?
+  logoUrl    String?  @map("logo_url")
+  createdAt  DateTime @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt  DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz
+
+  classrooms Classroom[]
+  trainers   Trainer[]
+  sessions   PlanningSession[]
+
+  @@map("schools")
+}
+
+model Trainer {
+  id         String   @id @default(uuid()) @db.Uuid
+  schoolId   String   @map("school_id") @db.Uuid
+  school     School   @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  ownerId    String   @map("owner_id")
+  owner      user     @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  userId     String?  @unique @map("user_id") // linked user account for login
+  user       user?    @relation("TrainerUser", fields: [userId], references: [id])
+  firstName  String   @map("first_name")
+  lastName   String   @map("last_name")
+  email      String?
+  phone      String?
+  specialty  String?
+  bio        String?
+  status     String   @default("active")
+  createdAt  DateTime @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt  DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz
+
+  sessions PlanningSession[]
+
+  @@unique([schoolId, email])
+  @@map("trainers")
+}
+
+model Classroom {
+  id        String   @id @default(uuid()) @db.Uuid
+  schoolId  String   @map("school_id") @db.Uuid
+  school    School   @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  ownerId   String   @map("owner_id")
+  owner     user     @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  name      String
+  level     String?
+  year      String?
+  color     String   @default("#7c3aed")
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz
+
+  students        Student[]
+  sessions        PlanningSession[]
+  correspondences Correspondence[]
+
+  @@map("classrooms")
+}
+
+model Student {
+  id          String    @id @default(uuid()) @db.Uuid
+  classroomId String    @map("classroom_id") @db.Uuid
+  classroom   Classroom @relation(fields: [classroomId], references: [id], onDelete: Cascade)
+  ownerId     String    @map("owner_id")
+  owner       user      @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  firstName   String    @map("first_name")
+  lastName    String    @map("last_name")
+  email       String?
+  phone       String?
+  notes       String?
+  status      String    @default("active")
+  createdAt   DateTime  @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt   DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamptz
+
+  grades          Grade[]
+  correspondences Correspondence[]
+
+  @@unique([classroomId, email])
+  @@map("students")
+}
+
+model PlanningSession {
+  id          String    @id @default(uuid()) @db.Uuid
+  schoolId    String    @map("school_id") @db.Uuid
+  school      School    @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  classroomId String    @map("classroom_id") @db.Uuid
+  classroom   Classroom @relation(fields: [classroomId], references: [id], onDelete: Cascade)
+  trainerId   String    @map("trainer_id") @db.Uuid
+  trainer     Trainer   @relation(fields: [trainerId], references: [id], onDelete: Cascade)
+  ownerId     String    @map("owner_id")
+  owner       user      @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  title       String
+  description String?
+  date        DateTime  @db.Date
+  startTime   String    @map("start_time")
+  endTime     String    @map("end_time")
+  location    String?
+  color       String    @default("#7c3aed")
+  status      String    @default("scheduled")
+  createdAt   DateTime  @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt   DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamptz
+
+  @@map("planning_sessions")
+}
+
+model Grade {
+  id        String   @id @default(uuid()) @db.Uuid
+  studentId String   @map("student_id") @db.Uuid
+  student   Student  @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  authorId  String   @map("author_id")
+  author    user     @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  ownerId   String   @map("owner_id")
+  value     Float
+  maxValue  Float    @default(20) @map("max_value")
+  subject   String?
+  comment   String?
+  date      DateTime @default(now()) @db.Date
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz
+
+  @@map("grades")
+}
+
+model Correspondence {
+  id          String    @id @default(uuid()) @db.Uuid
+  studentId   String    @map("student_id") @db.Uuid
+  student     Student   @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  classroomId String    @map("classroom_id") @db.Uuid
+  classroom   Classroom @relation(fields: [classroomId], references: [id], onDelete: Cascade)
+  authorId    String    @map("author_id")
+  author      user      @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  ownerId     String    @map("owner_id")
+  content     String
+  type        String    @default("note") // note, warning, positive, info
+  createdAt   DateTime  @default(now()) @map("created_at") @db.Timestamptz
+
+  @@map("correspondences")
+}
+
+model TeamMember {
+  id        String   @id @default(uuid()) @db.Uuid
+  ownerId   String   @map("owner_id")
+  owner     user     @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  email     String
+  name      String?
+  role      String   @default("member")
+  status    String   @default("pending")
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz
+
+  @@unique([ownerId, email])
+  @@map("team_members")
+}

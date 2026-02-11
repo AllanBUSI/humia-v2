@@ -1,25 +1,22 @@
 {
   "permissions": {
     "allow": [
-      "Bash(npx create-next-app@latest)",
-      "WebFetch(domain:learni-group.com)",
-      "Bash(npm install:*)",
+      "Bash(npx next build:*)",
+      "WebFetch(domain:fairpay.fr)",
       "Bash(npm run build:*)",
-      "Bash(npm run lint)",
-      "Bash(npm run dev)",
-      "Bash(wc:*)",
-      "Bash(npx tsc:*)",
-      "Bash(git status:*)",
-      "Bash(git commit:*)",
-      "Bash(gh pr view:*)",
-      "WebFetch(domain:finary.com)",
+      "Bash(npm install:*)",
+      "Bash(git -C \"c:\\\\Users\\\\abusi\\\\Desktop\\\\humia.app\\\\humia\" log --oneline -5)",
+      "Bash(npm uninstall:*)",
       "Bash(npx prisma generate:*)",
-      "Bash(npx prisma migrate dev:*)",
-      "Bash(npx prisma db push:*)",
-      "Bash(powershell -Command:*)",
-      "Bash(powershell -ExecutionPolicy Bypass -File:*)",
-      "Skill(analyze-codebase)",
-      "Skill(analyze-codebase:*)"
+      "Bash(npx prisma:*)",
+      "WebFetch(domain:pris.ly)",
+      "WebFetch(domain:www.prisma.io)",
+      "WebFetch(domain:www.better-auth.com)",
+      "Bash(dir:*)",
+      "WebFetch(domain:github.com)",
+      "Bash(npx shadcn@latest init:*)",
+      "Bash(npx shadcn@latest add button input label card badge avatar separator sidebar breadcrumb dropdown-menu sheet dialog tooltip -y)",
+      "Bash(npx shadcn@latest add:*)"
     ]
   }
 }
